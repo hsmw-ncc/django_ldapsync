@@ -1,0 +1,16 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Lokale SQLite-DB ignorieren
+db.sqlite3
+
+# VENV
+venv/*
+
+# Private Config
+local.py
+
+# Weitere lokale Dateien
+installed.txt

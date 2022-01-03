@@ -1,0 +1,40 @@
+{
+    // Pfad zu Python
+    "python.pythonPath": "${workspaceFolder}/venv/bin/python3",
+
+    // PyLint
+    "python.linting.pylintPath": "${workspaceFolder}/venv/bin/pylint",
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.pylintArgs": [
+        "--rcfile", "${workspaceFolder}/.pylintrc",
+        "--load-plugins",
+        "pylint_django"
+    ],
+    "python.linting.flake8Path": "${workspaceFolder}/venv/bin/flake8",
+    "python.linting.flake8Args": [
+            "--max-line-length=200",
+            "--ignore=E402,F841,F401,E302,E305",
+    ],
+    "python.linting.flake8Enabled": true,
+
+    // Autocomplete
+    "python.autoComplete.extraPaths": [
+        "${workspaceFolder}/venv/lib",
+        "${workspaceFolder}/venv/lib/site-packages"
+    ],
+
+    // Bestimmte Order ausblenden und bei der Suche ignorieren
+    "files.exclude": {
+        "**/.git": true,
+        "**/__pycache__/**": true,
+    },
+    "search.exclude": {
+        "**/.git": true,
+        "**/__pycache__/**": true,
+    },
+    "python.analysis.extraPaths": [
+      "${workspaceFolder}/venv/lib",
+      "${workspaceFolder}/venv/lib/site-packages"
+    ],
+}
