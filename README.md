@@ -7,7 +7,7 @@
 ## Einbinden in ein Django-Projekt
 * requirements.txt
 ```
--e git+ssh://git@github.com:HSMW-NCC/django_hsmw_ldap_sync.git#egg=ldapsync
+-e git+https://github.com/HSMW-NCC/django_ldapsync.git#egg=ldapsync
 ```
 * `INSTALLED_APPS` erweitern
 ```python
