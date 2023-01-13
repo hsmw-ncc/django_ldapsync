@@ -1,6 +1,6 @@
-# Djnago-Framework 3.1
+# Djnago-Framework
 # https://www.djangoproject.com/
-Django==3.1.*
+Django
 
 # LDAP
 # https://ldap3.readthedocs.io/en/latest/

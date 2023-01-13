@@ -8,7 +8,7 @@ setup(name='ldapsync',
     url='https://github.com/HSMW-NCC/django_ldapsync',
     packages=find_packages(exclude=['test']),
     install_requires=[
-        'django>=1.8',
+        'django>=3',
         'ldap3>=2.2.0',
     ],
 )
