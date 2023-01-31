@@ -1,5 +1,5 @@
 # LDAP-Nutzer und Passwort für den Zugriff
-LDAP_URI = 'ldaps://server/OU=Users,OU=HS,DC=hs-mittweida,DC=de'
+LDAP_URI = 'ldaps://server/DC=domain,DC=de'
 LDAP_USERNAME = 'LDAPUser'
 LDAP_PASSWORD = 'XXXXXXXXXXX'
 
