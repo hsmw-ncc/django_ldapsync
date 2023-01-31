@@ -37,6 +37,14 @@ LDAP_SYNC_DISABLE_INVALID_USER=True
 `LDAP_SYNC_DISABLE_INVALID_USER`
 * wenn `True` werden nicht gefundene Nutzer auf inaktiv gesetzt
 
+## Import von Gruppen
+* um Benutzer aus einer LDAP-Gruppe zu importieren
+```
+./venv/bin/python3 ./manage.py ldap_import --group <groupname>
+```
+* Nutzer werden mit LDAP-Attributen angelegt
+* Sinnvoll in Kombination mit der Synchronisation
+
 ## Wiederkehrende Synchronisation
 * um die Benutzer in regelmässigen Abständen zu Synchronisieren gibt es das Django-Kommando
 ```
@@ -47,6 +55,7 @@ LDAP_SYNC_DISABLE_INVALID_USER=True
   * `--exclude` - Diese Nutzer nicht deaktivieren
   * `--exclude-regex` - Die Nutzer auf die der RegEx passt nicht deaktivieren (Default: `r'^api-'`)
   * die Parameter haben nur einen Effekt wenn `LDAP_SYNC_DISABLE_INVALID_USER=True` ist
+
 
 # Entwicklung/Test
 * Benötigte Pakete (Debian)

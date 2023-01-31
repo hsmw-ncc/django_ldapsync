@@ -2,7 +2,7 @@ import logging
 import ssl
 
 import ldap3
-from ldap3 import Server, Connection, SYNC, OFFLINE_SLAPD_2_4, MOCK_SYNC
+from ldap3 import Server, Connection, SYNC
 from ldap3.core.exceptions import LDAPException
 from ldap3.core.tls import Tls
 from ldap3.utils.uri import parse_uri
@@ -12,28 +12,37 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils.functional import cached_property
 
+# Default-Settings
 DEFAULT_LDAP_SYNC_USER_ATTRIBUTES = {
     'givenName': 'first_name',
     'sn': 'last_name',
     'mail': 'email',
 }
-
-logger = logging.getLogger(__name__)
-
+DEFAULT_LDAP_SEARCH_ATTRIBUTES = {
+  'eduPersonPrincipalName',
+  'sn',
+  'givenName',
+  'mail'
+}
+DEFAULT_LDAP_TIMEOUT = 5
 
 class Ldap(object):
     def __init__(self):
         ''' Modul initialisieren'''
 
-        # Einstellungen aus den Django-Settings übernehen
+        # Logger
+        self.logger = logging.getLogger(__name__)
+
+        # Get Settings
         self.LDAP_SYNC_URI = settings.LDAP['uri']
-        self.LDAP_PARAMS   = parse_uri(self.LDAP_SYNC_URI)
+        self.LDAP_PARAMS = parse_uri(self.LDAP_SYNC_URI)
         self.LDAP_SYNC_BASE_USER = settings.LDAP['username']
         self.LDAP_SYNC_BASE_PASS = settings.LDAP['password']
         self.LDAP_SYNC_USER_ATTRIBUTES = getattr(settings.LDAP, 'sync_user_attributes', DEFAULT_LDAP_SYNC_USER_ATTRIBUTES)
-        self.LDAP_TIMEOUT = settings.LDAP['timeout']
+        self.LDAP_SEARCH_ATTRIBUTES = getattr(settings.LDAP, 'search_attributes', DEFAULT_LDAP_SEARCH_ATTRIBUTES)
+        self.LDAP_TIMEOUT = getattr(settings.LDAP, 'timeout', DEFAULT_LDAP_TIMEOUT)
 
-        # Die maximale Länge der Felder bestimmen
+        # Check MaxLength
         User = get_user_model()
         self.USER_MODEL_ATTRS_MAX_LENGTH = {}
         for field_name in self.LDAP_SYNC_USER_ATTRIBUTES.values():
@@ -42,38 +51,37 @@ class Ldap(object):
 
     @cached_property
     def connection(self):
-        ''' Verbindung herstellen '''
+        ''' Connecion '''
 
         # Verbindungsparameter für den LDAP-Server
-        server_kwargs = {
+        server_options = {
             'host': self.LDAP_PARAMS['host'],
             'use_ssl': False,
             'port': self.LDAP_PARAMS['port'],
             'connect_timeout': self.LDAP_TIMEOUT,
         }
         if self.LDAP_PARAMS['ssl']:
-            server_kwargs['use_ssl'] = True
-            server_kwargs['tls'] = Tls(validate=ssl.CERT_REQUIRED)
+            server_options['use_ssl'] = True
+            server_options['tls'] = Tls(validate=ssl.CERT_REQUIRED)
 
         # Authentifizierung am Server
-        s = Server(**server_kwargs)
-        connection_kwargs = {
-            'server': s,
+        ldap_server = Server(**server_options)
+        connection_options = {
+            'server': ldap_server,
             'auto_bind': True,
             'user': self.LDAP_SYNC_BASE_USER,
             'password': self.LDAP_SYNC_BASE_PASS,
             'client_strategy': SYNC,
         }
         try:
-            return Connection(**connection_kwargs)
+            return Connection(**connection_options)
         except LDAPException:
-            logger.warning("LDAP connection failed, LDAP updates will not be available.")
+            self.logger.warning("LDAP connection failed, LDAP updates will not be available.")
             return None
 
     def get_attributes(self, username):
-        """
-        :attention: This method is not part of the public API. Do not use it.
-        """
+        ''' This method is not part of the public API. Do not use it. '''
+
         model_attrs = {}
         ldap_user = self.get_user(username, self.LDAP_SYNC_USER_ATTRIBUTES.keys())
 
@@ -87,11 +95,8 @@ class Ldap(object):
         return model_attrs
 
     def get_user(self, username, attributes=ldap3.ALL_ATTRIBUTES):
-        """
-        Returns the specified user from LDAP, without doing any conversion.
+        ''' Returns the specified user from LDAP, without doing any conversion. '''
 
-        :rtype: dict
-        """
         cleaned_username = escape_filter_chars(username).split('@')[0]
         search_kwargs = {
             'search_base': self.LDAP_PARAMS['base'],
@@ -103,7 +108,7 @@ class Ldap(object):
         if not conn:
             return {}
         try:
-            logger.debug("Suche Nutzer: " + username)
+            self.logger.debug("Suche Nutzer: " + username)
             result = conn.search(**search_kwargs)
         except LDAPException:
             # Try one more time before raising the exception
@@ -119,3 +124,39 @@ class Ldap(object):
             return {}
         else:
             return conn.response[0]['attributes']
+
+    def get_dn(self, common_name: str):
+        ''' Returns DistinguishedName from CommonName '''
+
+        # Search for CN
+        self.connection.search(
+            search_base=self.LDAP_PARAMS['base'],
+            search_scope=ldap3.SUBTREE,
+            search_filter=f"(cn={common_name})",
+            attributes=['DistinguishedName']
+        )
+
+        # Return
+        if len(self.connection.response) == 0:
+            return None
+        return self.connection.response[0]['attributes']['DistinguishedName']
+
+    def get_group_members(self, group_dn: str):
+        ''' Returns all Members from a specific group '''
+
+        # Search for Group-Members
+        search_filter = f"(&(objectClass=user)(memberOf:1.2.840.113556.1.4.1941:={group_dn}))"
+        entry_generator = self.connection.extend.standard.paged_search(
+            search_base=self.LDAP_PARAMS['base'],
+            search_scope=ldap3.SUBTREE,
+            search_filter=search_filter,
+            attributes=self.LDAP_SEARCH_ATTRIBUTES,
+            paged_size=500,
+            generator=True
+        )
+
+        # Ergebnisse parsen
+        member_list = []
+        for entry in entry_generator:
+            member_list.append(entry['attributes'])
+        return member_list

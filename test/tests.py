@@ -40,17 +40,10 @@ class LdapTestCase(TestCase):
     def test_management_command(self):
         ''' Management-Commando testen '''
 
-        # Nuter anlegen
-        self.USER_MODEL.objects.create(username=settings.LDAP_TEST['username'])
+        # Nuter importieren anlegen
+        management.call_command('ldap_import', group=settings.LDAP_TEST['group'])
 
-        # Atrribute leeren
-        self.USER_MODEL.objects.all().update(first_name='', last_name='', email='')
-        user = self.USER_MODEL.objects.get(username=settings.LDAP_TEST['username'])
-        self.assertEquals(user.first_name, '')
-        self.assertEquals(user.last_name,  '')
-        self.assertEquals(user.email, '')
-
-        # Sync ausführen, danach sollten die Atrribute da sein
+        # Sync ausführen, danach sollten die Attribute da sein
         management.call_command('ldap_sync')
         user = self.USER_MODEL.objects.get(username=settings.LDAP_TEST['username'])
         self.assertEquals(user.first_name, settings.LDAP_TEST['expected_firstname'])

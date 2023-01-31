@@ -15,3 +15,9 @@ ldap = Ldap()
 user = ldap.get_user(input("Benutzername: "))
 for key in user:
   print(f"{key}: {user[key]}")
+
+# Gruppe abrufen und ausgeben
+group_dn = ldap.get_dn(input("Gruppenname: "))
+members = ldap.get_group_members(group_dn)
+for m in members:
+  print(f"{m['eduPersonPrincipalName']}: {m}")
