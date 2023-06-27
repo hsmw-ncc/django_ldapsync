@@ -54,7 +54,7 @@ class LdapTestCase(TestCase):
         ''' Management-Commando testen, Nicht gefundene Nutzer deaktivieren'''
 
         with self.settings(LDAP_SYNC_DISABLE_INVALID_USER=True):
-            # Nutzer erstellen, Nutzer 1 ist im LDAP vorhanden, Nutzer 2 nicht
+            # Nutzer erstellen, Nutzer 1 ist im LDAP vorhanden, Nutzer 2 nicht, Nutzer 3 ist api-Nutzer (wird im Default ignoriert)
             self.USER_MODEL.objects.create(username=settings.LDAP_TEST['username'],  is_active=True)
             self.USER_MODEL.objects.create(username='not_in_ldap', is_active=True)
 
@@ -94,6 +94,8 @@ class LdapTestCase(TestCase):
             self.USER_MODEL.objects.create(username=settings.LDAP_TEST['username'],  is_active=False)
             self.USER_MODEL.objects.create(username='alice', is_active=False)
             self.USER_MODEL.objects.create(username='api-not_in_ldap', is_active=True)
+            self.USER_MODEL.objects.create(username='api_not_in_ldap', is_active=True)
+            self.USER_MODEL.objects.create(username='not_in_ldap_api', is_active=True)
 
             # Attribute leeren
             self.USER_MODEL.objects.all().update(first_name='', last_name='', email='')
@@ -108,6 +110,10 @@ class LdapTestCase(TestCase):
             user = self.USER_MODEL.objects.get(username='alice')
             self.assertFalse(user.is_active)
             user = self.USER_MODEL.objects.get(username='api-not_in_ldap')
+            self.assertTrue(user.is_active)
+            user = self.USER_MODEL.objects.get(username='api_not_in_ldap')
+            self.assertTrue(user.is_active)
+            user = self.USER_MODEL.objects.get(username='not_in_ldap_api')
             self.assertTrue(user.is_active)
 
             # Output prüfen

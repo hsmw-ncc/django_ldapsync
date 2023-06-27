@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 from django_ldapsync import Ldap
 
 class Command(BaseCommand):
-    DEFAULT_EXCLUDE_REGEX = r'^api-'
+    DEFAULT_EXCLUDE_REGEX = '.*(_|-|^)api(_|-|$).*'
     help = "Updates the attributes of all Django users from the LDAP server."
 
     def add_arguments(self, parser):
