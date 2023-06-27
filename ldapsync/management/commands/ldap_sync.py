@@ -28,7 +28,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         verbosity = options.get('verbosity')
-        sync_is_active = getattr(settings, 'LDAP_SYNC_DISABLE_INVALID_USER', True)
+        sync_is_active = getattr(settings, 'LDAP_SYNC_DISABLE_INVALID_USER', False)
 
         exclude_regex = options.get('exclude_regex')
         if exclude_regex:
@@ -41,9 +41,9 @@ class Command(BaseCommand):
             exclude_usernames = set()
 
         User = get_user_model()
-        l = Ldap()
+        ldap = Ldap()
 
-        values = list(l.LDAP_SYNC_USER_ATTRIBUTES.values())
+        values = list(ldap.LDAP_SYNC_USER_ATTRIBUTES.keys())
         values.append(User.USERNAME_FIELD)
         if sync_is_active:
             values.append('is_active')
@@ -61,7 +61,7 @@ class Command(BaseCommand):
                     self.stdout.write('Ignoring {}'.format(username))
                 continue
 
-            attrs = l.get_attributes(username)
+            attrs = ldap.get_django_attributes_for_user(username)
             if sync_is_active:
                 if attrs:
                     attrs['is_active'] = True

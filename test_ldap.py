@@ -20,4 +20,4 @@ for key in user:
 group_dn = ldap.get_dn(input("Gruppenname: "))
 members = ldap.get_group_members(group_dn)
 for m in members:
-  print(f"{m['eduPersonPrincipalName']}: {m}")
+  print(f"{m[ldap.get_username_key()]}: {m}")

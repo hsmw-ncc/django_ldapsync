@@ -1,4 +1,3 @@
-import os
 from io import StringIO
 from django.conf import settings
 from django.core import management
@@ -12,6 +11,7 @@ class LdapTestCase(TestCase):
 
     def test_sync_attributes(self):
         ''' Normalen Sync prüfen'''
+
         # User anlegen -> Sync sollte automatisch funktionieren
         user = self.USER_MODEL.objects.create(username=settings.LDAP_TEST['username'])
         self.assertEquals(user.first_name, settings.LDAP_TEST['expected_firstname'])
@@ -41,7 +41,7 @@ class LdapTestCase(TestCase):
         ''' Management-Commando testen '''
 
         # Nuter importieren anlegen
-        management.call_command('ldap_import', group=settings.LDAP_TEST['group'])
+        management.call_command('ldap_import', group=settings.LDAP_TEST['expected_group'])
 
         # Sync ausführen, danach sollten die Attribute da sein
         management.call_command('ldap_sync')
@@ -52,6 +52,7 @@ class LdapTestCase(TestCase):
 
     def test_management_command_is_active(self):
         ''' Management-Commando testen, Nicht gefundene Nutzer deaktivieren'''
+
         with self.settings(LDAP_SYNC_DISABLE_INVALID_USER=True):
             # Nutzer erstellen, Nutzer 1 ist im LDAP vorhanden, Nutzer 2 nicht
             self.USER_MODEL.objects.create(username=settings.LDAP_TEST['username'],  is_active=True)
@@ -69,6 +70,7 @@ class LdapTestCase(TestCase):
 
     def test_management_command_without_is_active_sync(self):
         ''' Management-Commando testen, Nicht gefundene Nutzer aktiv lassen'''
+
         with self.settings(LDAP_SYNC_DISABLE_INVALID_USER=False):
             # Nutzer erstellen, Nutzer 1 ist im LDAP vorhanden, Nutzer 2 nicht
             self.USER_MODEL.objects.create(username=settings.LDAP_TEST['username'],  is_active=True)
@@ -86,6 +88,7 @@ class LdapTestCase(TestCase):
 
     def test_management_command_exclude_arguments(self):
         ''' Management-Commando testen, bestimmte Nicht gefundene Nutzer ausnehmen'''
+
         with self.settings(LDAP_SYNC_DISABLE_INVALID_USER=True):
             # Nutzer erstellen, Nutzer 1 ist im LDAP vorhanden, Nutzer 2/3 nicht
             self.USER_MODEL.objects.create(username=settings.LDAP_TEST['username'],  is_active=False)
@@ -114,6 +117,7 @@ class LdapTestCase(TestCase):
 
     def test_invalid_user(self):
         ''' Ungültiger Nutzer anlegen '''
+
         self.USER_MODEL.objects.create(username='unknown')
         user = self.USER_MODEL.objects.get(username='unknown')
         self.assertEquals(user.first_name, '')

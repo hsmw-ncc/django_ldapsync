@@ -14,15 +14,10 @@ from django.utils.functional import cached_property
 
 # Default-Settings
 DEFAULT_LDAP_SYNC_USER_ATTRIBUTES = {
-    'givenName': 'first_name',
-    'sn': 'last_name',
-    'mail': 'email',
-}
-DEFAULT_LDAP_SEARCH_ATTRIBUTES = {
-  'eduPersonPrincipalName',
-  'sn',
-  'givenName',
-  'mail'
+    'username': 'sAMAccountName',
+    'first_name': 'givenName',
+    'last_name': 'sn',
+    'email': 'mail',
 }
 DEFAULT_LDAP_TIMEOUT = 5
 
@@ -34,18 +29,17 @@ class Ldap(object):
         self.logger = logging.getLogger(__name__)
 
         # Get Settings
-        self.LDAP_SYNC_URI = settings.LDAP['uri']
+        self.LDAP_SYNC_URI = settings.LDAP_SYNC_CONNECTION['uri']
         self.LDAP_PARAMS = parse_uri(self.LDAP_SYNC_URI)
-        self.LDAP_SYNC_BASE_USER = settings.LDAP['username']
-        self.LDAP_SYNC_BASE_PASS = settings.LDAP['password']
-        self.LDAP_SYNC_USER_ATTRIBUTES = getattr(settings.LDAP, 'sync_user_attributes', DEFAULT_LDAP_SYNC_USER_ATTRIBUTES)
-        self.LDAP_SEARCH_ATTRIBUTES = getattr(settings.LDAP, 'search_attributes', DEFAULT_LDAP_SEARCH_ATTRIBUTES)
-        self.LDAP_TIMEOUT = getattr(settings.LDAP, 'timeout', DEFAULT_LDAP_TIMEOUT)
+        self.LDAP_SYNC_BASE_USER = settings.LDAP_SYNC_CONNECTION['username']
+        self.LDAP_SYNC_BASE_PASS = settings.LDAP_SYNC_CONNECTION['password']
+        self.LDAP_TIMEOUT = getattr(settings.LDAP_SYNC_CONNECTION, 'timeout', DEFAULT_LDAP_TIMEOUT)
+        self.LDAP_SYNC_USER_ATTRIBUTES = getattr(settings, 'LDAP_SYNC_USER_ATTRIBUTES', DEFAULT_LDAP_SYNC_USER_ATTRIBUTES)
 
         # Check MaxLength
         User = get_user_model()
         self.USER_MODEL_ATTRS_MAX_LENGTH = {}
-        for field_name in self.LDAP_SYNC_USER_ATTRIBUTES.values():
+        for field_name in self.LDAP_SYNC_USER_ATTRIBUTES.keys():
             field = User._meta.get_field(field_name)
             self.USER_MODEL_ATTRS_MAX_LENGTH[field_name] = field.max_length
 
@@ -79,19 +73,25 @@ class Ldap(object):
             self.logger.warning("LDAP connection failed, LDAP updates will not be available.")
             return None
 
-    def get_attributes(self, username):
-        ''' This method is not part of the public API. Do not use it. '''
+    def get_username_key(self):
+        ''' Return LDAP-Key which represents Django-Username '''
 
+        return self.LDAP_SYNC_USER_ATTRIBUTES['username']
+
+    def get_django_attributes_for_user(self, username):
+        ''' Return Django-Attributes for User '''
+
+        # Get from LDAP
+        ldap_attributes = list(self.LDAP_SYNC_USER_ATTRIBUTES.values())
+        ldap_user = self.get_user(username, attributes=ldap_attributes)
+
+        # Return for Django (use Mapping)
         model_attrs = {}
-        ldap_user = self.get_user(username, self.LDAP_SYNC_USER_ATTRIBUTES.keys())
-
-        for attr in self.LDAP_SYNC_USER_ATTRIBUTES:
-            if attr in ldap_user and ldap_user[attr]:
-                field_name = self.LDAP_SYNC_USER_ATTRIBUTES[attr]
-                ldap_value = ldap_user[attr]
+        for django_key, ldap_key in self.LDAP_SYNC_USER_ATTRIBUTES.items():
+            if ldap_key in ldap_user and ldap_user[ldap_key]:
                 # Limit the LDAP value to the `max_length` of the field. Otherwise
                 # we run into validation errors.
-                model_attrs[field_name] = ldap_value[0:self.USER_MODEL_ATTRS_MAX_LENGTH[field_name]]
+                model_attrs[django_key] = ldap_user[ldap_key][0:self.USER_MODEL_ATTRS_MAX_LENGTH[django_key]]
         return model_attrs
 
     def get_user(self, username, attributes=ldap3.ALL_ATTRIBUTES):
@@ -120,7 +120,7 @@ class Ldap(object):
             conn.bind()
             result = conn.search(**search_kwargs)
 
-        if not result:
+        if not result or not conn.response[0] or 'attributes' not in conn.response[0]:
             return {}
         else:
             return conn.response[0]['attributes']
@@ -145,18 +145,21 @@ class Ldap(object):
         ''' Returns all Members from a specific group '''
 
         # Search for Group-Members
+        attributes = list(self.LDAP_SYNC_USER_ATTRIBUTES.values())
         search_filter = f"(&(objectClass=user)(memberOf:1.2.840.113556.1.4.1941:={group_dn}))"
         entry_generator = self.connection.extend.standard.paged_search(
             search_base=self.LDAP_PARAMS['base'],
             search_scope=ldap3.SUBTREE,
             search_filter=search_filter,
-            attributes=self.LDAP_SEARCH_ATTRIBUTES,
+            attributes=attributes,
             paged_size=500,
-            generator=True
+            generator=True,
+            get_operational_attributes=False,
         )
 
         # Ergebnisse parsen
         member_list = []
         for entry in entry_generator:
-            member_list.append(entry['attributes'])
+            if entry['type'] == 'searchResEntry':
+              member_list.append(entry['attributes'])
         return member_list

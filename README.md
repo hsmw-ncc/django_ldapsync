@@ -1,4 +1,4 @@
-# LdapSync
+# Django LdapSync
 
 ## Allgemeines
 * Django-Modul zum Synchronisieren der Nutzer mit dem LDAP/AD
@@ -7,35 +7,61 @@
 ## Einbinden in ein Django-Projekt
 * requirements.txt
 ```
--e git+https://github.com/HSMW-NCC/django_ldapsync.git#egg=ldapsync
+-e git+https://github.com/HSMW-NCC/django_ldapsync.git#egg=django_ldapsync
 ```
 * `INSTALLED_APPS` erweitern
 ```python
 INSTALLED_APPS = (
     ...
-    'ldapsync',
+    'django_ldapsync',
 )
 ```
 * Einstellungen des Moduls in den Django-Settings ablegen
 ```python
-LDAP = {
+# LDAP-Verbindungsdaten
+LDAP_SYNC_CONNECTION = {
     'uri': 'ldaps://server/OU=Users,OU=HS,DC=hs-mittweida,DC=de',
     'username': 'xxxxxxxxxxx',
     'password': 'xxxxxxxxxxx',
-    'timeout': 3
+    # optionale Parameter
+    'timeout': 5
 }
-LDAP_SYNC_DISABLE_INVALID_USER=True
+
+# Welche Attribute sollen synchronisiert werden
+# (Mapping mit Django)
+LDAP_SYNC_USER_ATTRIBUTES = {
+    'username': 'sAMAccountName',
+    'first_name': 'givenName',
+    'last_name': 'sn',
+    'email': 'mail',
+}
+
+# Sollen nicht gefundene Nutzer deaktiviert werden?
+LDAP_SYNC_DISABLE_INVALID_USER = True
+
+# Nutzername immer in Kleinbuchstaben anlegen?
+LDAP_SYNC_ALWAYS_LOWER_USERNAME = False
 ```
 
 ## Einstellungen
-`LDAP`
+`LDAP_SYNC_CONNECTION`
 * `uri` - LDAP-Pfad: Protokoll, Server, SearchBase
 * `username` - Benutzername (AD)
 * `password` - Zugehöriges Passwort
 * `timeout` - Timeout in Sekunden
 
+`LDAP_SYNC_USER_ATTRIBUTES`
+* Mapping von Django auf LDAP
+* Default siehe oben
+
 `LDAP_SYNC_DISABLE_INVALID_USER`
-* wenn `True` werden nicht gefundene Nutzer auf inaktiv gesetzt
+* wenn `True` ann werden nicht gefundene Nutzer deaktiviert
+* Default: `False`
+
+`LDAP_SYNC_ALWAYS_LOWER_USERNAME`
+* wenn `True` dann wird der Nutzername in Kleinbuchstaben umgewandelt
+* wenn `False` dann wird der Nutzername ohne Änderung aus dem LDAP übernommen
+* Default: `True`
 
 ## Import von Gruppen
 * um Benutzer aus einer LDAP-Gruppe zu importieren
@@ -55,7 +81,6 @@ LDAP_SYNC_DISABLE_INVALID_USER=True
   * `--exclude` - Diese Nutzer nicht deaktivieren
   * `--exclude-regex` - Die Nutzer auf die der RegEx passt nicht deaktivieren (Default: `r'^api-'`)
   * die Parameter haben nur einen Effekt wenn `LDAP_SYNC_DISABLE_INVALID_USER=True` ist
-
 
 # Entwicklung/Test
 * Benötigte Pakete (Debian)

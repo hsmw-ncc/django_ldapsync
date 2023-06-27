@@ -10,4 +10,5 @@ LDAP_TEST = {
     'expected_firstname': 'Test',
     'expected_lastname': 'User',
     'expected_mail': 'testuser@server',
+    'expected_group': 'test_group',
 }

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
@@ -15,6 +16,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         ''' Import Users from LDAP-Group '''
 
+        # Settings
+        username_lower = getattr(settings, 'LDAP_SYNC_ALWAYS_LOWER_USERNAME', True)
+
         # Read Group-Members
         ldap = Ldap()
         group_name = options.get('group_name', None)
@@ -28,8 +32,11 @@ class Command(BaseCommand):
         User = get_user_model()
         for member in members:
 
+          # Which Field ist the Username
+          username_key = ldap.LDAP_SYNC_USER_ATTRIBUTES['username']
+
           # User
-          username = member['eduPersonPrincipalName'].lower()
+          username = member[username_key] if username_lower else member[username_key].lower()
           obj, created = User.objects.get_or_create(username=username)
           if created:
             obj.set_unusable_password()

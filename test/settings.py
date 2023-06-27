@@ -1,10 +1,16 @@
 from local import LDAP_PASSWORD, LDAP_USERNAME, LDAP_URI, LDAP_TEST
 
-LDAP = {
+LDAP_SYNC_CONNECTION = {
     'uri': LDAP_URI,
     'username': LDAP_USERNAME,
     'password': LDAP_PASSWORD,
     'timeout': 3
+}
+LDAP_SYNC_USER_ATTRIBUTES = {
+    'username': 'sAMAccountName',
+    'first_name': 'givenName',
+    'last_name': 'sn',
+    'email': 'mail',
 }
 LDAP_SYNC_DISABLE_INVALID_USER=True
 
