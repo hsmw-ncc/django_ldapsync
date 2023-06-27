@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
-from ldapsync.ldap import Ldap
+from django_ldapsync import Ldap
 
 class Command(BaseCommand):
     help = "Import LDAP-Group"

@@ -1,7 +1,7 @@
 import os
 import logging
 import django
-from ldapsync.ldap import Ldap
+from django_ldapsync import Ldap
 
 # Logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
