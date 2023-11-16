@@ -42,6 +42,9 @@ class Command(BaseCommand):
 
         User = get_user_model()
         ldap = Ldap()
+        if not ldap.connection:
+            self.stderr.write("No LDAP-Connection, Abort")
+            return
 
         values = list(ldap.LDAP_SYNC_USER_ATTRIBUTES.keys())
         values.append(User.USERNAME_FIELD)

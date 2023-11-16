@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='django_ldapsync',
-    version='2.0.1',
+    version='2.0.2',
     description='Synchronisiert Django-Nutzer mit dem LDAP',
     author='Tom Schreiber',
     author_email='tom.schreiber@hs-mittweida.de',

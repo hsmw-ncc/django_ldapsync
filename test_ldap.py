@@ -12,6 +12,9 @@ django.setup()
 
 # Nutzer abrufen und ausgeben
 ldap = Ldap()
+if not ldap.connection:
+  print("Konnte keine Verbindung herstellen")
+  quit()
 user = ldap.get_user(input("Benutzername: "))
 for key in user:
   print(f"{key}: {user[key]}")
